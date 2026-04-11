@@ -11,13 +11,12 @@ import (
 	"time"
 )
 
-// 1. 【修改点】：在结构体里增加 Proxy 和 Insecure
 type AppConfig struct {
 	DefaultThreads int      `json:"default_threads"`
 	TimeoutSec     int      `json:"timeout_sec"`
 	MaxRetries     int      `json:"max_retries"`
-	Proxy          string   `json:"proxy"`    // 新增：默认代理
-	Insecure       bool     `json:"insecure"` // 新增：默认是否跳过证书验证
+	Proxy          string   `json:"proxy"`
+	Insecure       bool     `json:"insecure"`
 	UserAgents     []string `json:"user_agents"`
 }
 
@@ -54,13 +53,12 @@ func LoadConfigAndFlags() {
 		json.Unmarshal(configFile, &Config)
 	} else {
 		fmt.Println("⚠️ 未检测到 config.json，正在自动生成默认配置文件...")
-		// 2. 【修改点】：在自动生成的模板里加上这两个字段的默认值
 		Config = AppConfig{
 			DefaultThreads: 32,
 			TimeoutSec:     15,
 			MaxRetries:     5,
-			Proxy:          "",    // 默认留空，直连
-			Insecure:       false, // 默认不跳过，保证安全
+			Proxy:          "",
+			Insecure:       false,
 			UserAgents: []string{
 				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 				"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
@@ -75,11 +73,16 @@ func LoadConfigAndFlags() {
 		}
 	}
 
+	// 【修改点】：动态生成当前时间的默认名称
+	// Go 语言特有的日期格式化魔法: 06=年 01=月 02=日 15=时 04=分 05=秒
+	defaultName := time.Now().Format("video_060102_15-04-05")
+
 	flag.StringVar(&Flags.URL, "url", "", "M3U8下载地址")
 	flag.StringVar(&Flags.URL, "u", "", "同 -url")
 
-	flag.StringVar(&Flags.OutName, "name", "movie", "保存的文件名")
-	flag.StringVar(&Flags.OutName, "o", "movie", "同 -name")
+	// 【修改点】：将默认值从硬编码的 "movie" 换成刚刚生成的 defaultName
+	flag.StringVar(&Flags.OutName, "name", defaultName, "保存的文件名 (默认使用当前时间)")
+	flag.StringVar(&Flags.OutName, "o", defaultName, "同 -name")
 
 	flag.StringVar(&Flags.OutDir, "dir", "", "保存目录")
 	flag.StringVar(&Flags.OutDir, "d", "", "同 -dir")
@@ -87,7 +90,6 @@ func LoadConfigAndFlags() {
 	flag.IntVar(&Flags.Threads, "threads", Config.DefaultThreads, "并发线程数")
 	flag.IntVar(&Flags.Threads, "n", Config.DefaultThreads, "同 -threads")
 
-	// 3. 【修改点】：这里的默认值不再是硬编码的 "" 和 false，而是去读 Config 里的值
 	flag.StringVar(&Flags.Proxy, "proxy", Config.Proxy, "设置代理 (例: socks5://127.0.0.1:10808)")
 	flag.StringVar(&Flags.Proxy, "p", Config.Proxy, "同 -proxy")
 
