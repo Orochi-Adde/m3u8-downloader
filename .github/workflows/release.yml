@@ -1,0 +1,100 @@
+name: Auto Build and Release
+
+# 1. 触发条件：当你直接在网页上保存到 master 或 main 分支时，自动触发
+on:
+  #push:
+    #branches:
+      #- master
+      #- main
+  # 保留网页手动触发按钮（以防万一你想手动跑）
+ workflow_dispatch:
+
+jobs:
+  # 第一阶段：在多平台上并行编译和打包
+  build:
+    name: Build & Package
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 定义要编译的系统和架构
+        # 新增了 Linux ARM64 和 Windows ARM64 的支持
+        include:
+          - os: windows
+            arch: amd64
+            ext: ".exe"
+          - os: windows
+            arch: arm64
+            ext: ".exe"
+          - os: linux
+            arch: amd64
+            ext: ""
+          - os: linux
+            arch: arm64
+            ext: ""
+          - os: darwin # Mac M1/M2/M3 芯片
+            arch: arm64
+            ext: ""
+          - os: darwin # Mac 老款 Intel 芯片
+            arch: amd64
+            ext: ""
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21' # 使用稳定的 Go 1.21 版本
+
+    - name: Build and Zip
+      env:
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+      run: |
+        # 1. 创建一个临时打包文件夹
+        mkdir -p package_temp
+        
+        # 2. 编译当前目录下的所有 .go 文件（注意最后那个点）
+        go build -o package_temp/m3u8-downloader${{ matrix.ext }} .
+        
+        # 3. 把配置文件拷贝进去 (如果存在的话)
+        cp config.json package_temp/ || true
+        
+        # 4. 进入文件夹，把程序和配置一起打成 Zip 压缩包
+        cd package_temp
+        zip -r ../m3u8-downloader-${{ matrix.os }}-${{ matrix.arch }}.zip ./*
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: package-${{ matrix.os }}-${{ matrix.arch }}
+        path: m3u8-downloader-${{ matrix.os }}-${{ matrix.arch }}.zip
+
+  # 第二阶段：统一发布到 Release 页面
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 必须开启写权限
+
+    steps:
+    - name: Download all packages
+      uses: actions/download-artifact@v4
+      with:
+        path: ./releases
+        pattern: package-*
+        merge-multiple: true
+
+    - name: Auto Publish Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "./releases/*.zip"
+        tag: "latest"
+        name: "最新自动编译版 (Latest)"
+        body: "多模块重构版。下载对应的 zip 压缩包后，解压即可获得运行程序和 config.json 配置文件。"
+        allowUpdates: true
+        replacesArtifacts: true
+        makeLatest: true
+        token: ${{ secrets.GITHUB_TOKEN }}
