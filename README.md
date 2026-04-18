@@ -26,7 +26,7 @@
 ### 2. 基础下载
 只需提供一个 `-u` 参数即可开始下载，默认保存为 `movie.mp4`：
 ```bash
-m3u8-downloader -u "[https://example.com/video.m3u8](https://example.com/video.m3u8)"
+m3u8-downloader -u "https://example.com/video.m3u8"
 ```
 
 ## ⚙️ 配置文件 (config.json)
@@ -34,6 +34,7 @@ m3u8-downloader -u "[https://example.com/video.m3u8](https://example.com/video.m
 ```json
 {
   "default_threads": 32,      // 默认并发数 (建议 32-64)
+  "default_dir": "./"         // 默认下载文件保存目录
   "timeout_sec": 15,          // 碎片下载超时时间 (秒)
   "max_retries": 5,           // 失败重试次数
   "proxy": "",                // 默认全局代理 (例: socks5://127.0.0.1:10808，留空则无代理)
@@ -61,17 +62,17 @@ m3u8-downloader -u "[https://example.com/video.m3u8](https://example.com/video.m
 ## 🎮 进阶使用场景
 * **场景1**：极限榨干网速如果你拥有千兆宽带且目标服务器没做限制，可以直接拉起 64 甚至 128 线程暴力下载：
 ```Bash 
-m3u8-downloader -u "[https://example.com/video.m3u8](https://example.com/video.m3u8)" -o "高清大片" -n 64
+m3u8-downloader -u "https://example.com/video.m3u8(https://example.com/video.m3u8)" -o "高清大片" -n 64
 ```
 
 * **场景2**：突破防盗链（伪装来源）很多视频网站会校验 Referer（来源网址）和 Cookie。你可以使用 -H 无限叠加请求头来骗过服务器：
 ```Bash 
-m3u8-downloader -u "[https://example.com/video.m3u8](https://example.com/video.m3u8)" -o "突破防盗链" -H "Referer: [https://example.com](https://example.com)" -H "Origin: [https://example.com](https://example.com)" -c "vip_token=xxxx"
+m3u8-downloader -u "[https://example.com/video.m3u8](https://example.com/video.m3u8)" -o "突破防盗链" -H "Referer: https://example.com(https://example.com)" -H "Origin: https://example.com(https://example.com)" -c "vip_token=xxxx"
 ```
 
 * **场景3**：临时走代理下载特定被墙视频假设你 config.json 里没有配代理，但临时遇到一个需要翻墙才能下的源：
 ```Bash 
-m3u8-downloader -u "[https://wall.com/video.m3u8](https://wall.com/video.m3u8)" -p "socks5://127.0.0.1:10808"
+m3u8-downloader -u "https://wall.com/video.m3u8(https://wall.com/video.m3u8)" -p "socks5://127.0.0.1:10808"
 ```
 反之，如果你在 config.json 配置了全局代理，但想临时直连下载国内视频，可以使用 -p "" 清空代理。
 
