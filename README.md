@@ -67,18 +67,18 @@ m3u8-downloader -u "https://example.com/video.m3u8(https://example.com/video.m3u
 
 * **场景2**：突破防盗链（伪装来源）很多视频网站会校验 Referer（来源网址）和 Cookie。你可以使用 -H 无限叠加请求头来骗过服务器：
 ```Bash 
-m3u8-downloader -u "[https://example.com/video.m3u8](https://example.com/video.m3u8)" -o "突破防盗链" -H "Referer: https://example.com(https://example.com)" -H "Origin: https://example.com(https://example.com)" -c "vip_token=xxxx"
+m3u8-downloader -u "https://example.com/video.m3u8" -o "突破防盗链" -H "Referer: https://example.com" -H "Origin: https://example.com" -c "vip_token=xxxx"
 ```
 
 * **场景3**：临时走代理下载特定被墙视频假设你 config.json 里没有配代理，但临时遇到一个需要翻墙才能下的源：
 ```Bash 
-m3u8-downloader -u "https://wall.com/video.m3u8(https://wall.com/video.m3u8)" -p "socks5://127.0.0.1:10808"
+m3u8-downloader -u "https://wall.com/video.m3u8" -p "socks5://127.0.0.1:10808"
 ```
 反之，如果你在 config.json 配置了全局代理，但想临时直连下载国内视频，可以使用 -p "" 清空代理。
 
 * **场景4**：强行洗牌重新下载如果之前下载生成的 mp4 损坏，或者你想重新下载，直接加上 -f 参数，程序会自动铲平旧文件：
 ```Bash 
-m3u8-downloader -u "[https://example.com/video.m3u8](https://example.com/video.m3u8)" -o "老视频" -f
+m3u8-downloader -u "https://example.com/video.m3u8" -o "老视频" -f
 ```
 
 ## ❓ 常见问题(FAQ)
