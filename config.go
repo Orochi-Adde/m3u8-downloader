@@ -11,12 +11,14 @@ import (
 	"time"
 )
 
+// 1. 结构体新增 DefaultDir
 type AppConfig struct {
 	DefaultThreads int      `json:"default_threads"`
 	TimeoutSec     int      `json:"timeout_sec"`
 	MaxRetries     int      `json:"max_retries"`
 	Proxy          string   `json:"proxy"`
 	Insecure       bool     `json:"insecure"`
+	DefaultDir     string   `json:"default_dir"` // 【新增这一行】
 	UserAgents     []string `json:"user_agents"`
 }
 
@@ -59,6 +61,7 @@ func LoadConfigAndFlags() {
 			MaxRetries:     5,
 			Proxy:          "",
 			Insecure:       false,
+			DefaultDir:     "", // 【新增这一行：默认留空，代表当前目录】
 			UserAgents: []string{
 				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 				"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
@@ -73,24 +76,22 @@ func LoadConfigAndFlags() {
 		}
 	}
 
-	// 【修改点】：动态生成当前时间的默认名称
-	// Go 语言特有的日期格式化魔法: 06=年 01=月 02=日 15=时 04=分 05=秒
 	defaultName := time.Now().Format("video_060102_15-04-05")
 
 	flag.StringVar(&Flags.URL, "url", "", "M3U8下载地址")
 	flag.StringVar(&Flags.URL, "u", "", "同 -url")
 
-	// 【修改点】：将默认值从硬编码的 "movie" 换成刚刚生成的 defaultName
-	flag.StringVar(&Flags.OutName, "name", defaultName, "保存的文件名 (默认使用当前时间)")
+	flag.StringVar(&Flags.OutName, "name", defaultName, "保存的文件名")
 	flag.StringVar(&Flags.OutName, "o", defaultName, "同 -name")
 
-	flag.StringVar(&Flags.OutDir, "dir", "", "保存目录")
-	flag.StringVar(&Flags.OutDir, "d", "", "同 -dir")
+	// 2. 【修改点】让命令行的默认值绑定到 Config.DefaultDir
+	flag.StringVar(&Flags.OutDir, "dir", Config.DefaultDir, "保存目录")
+	flag.StringVar(&Flags.OutDir, "d", Config.DefaultDir, "同 -dir")
 
 	flag.IntVar(&Flags.Threads, "threads", Config.DefaultThreads, "并发线程数")
 	flag.IntVar(&Flags.Threads, "n", Config.DefaultThreads, "同 -threads")
 
-	flag.StringVar(&Flags.Proxy, "proxy", Config.Proxy, "设置代理 (例: socks5://127.0.0.1:10808)")
+	flag.StringVar(&Flags.Proxy, "proxy", Config.Proxy, "设置代理")
 	flag.StringVar(&Flags.Proxy, "p", Config.Proxy, "同 -proxy")
 
 	flag.BoolVar(&Flags.Insecure, "insecure", Config.Insecure, "跳过 HTTPS 验证")
