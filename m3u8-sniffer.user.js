@@ -17,7 +17,7 @@
 // @downloadURL  https://raw.githubusercontent.com/Orochi-Adde/m3u8-downloader/main/m3u8-sniffer.user.js
 // @updateURL    https://raw.githubusercontent.com/Orochi-Adde/m3u8-downloader/main/m3u8-sniffer.user.js
 // @run-at       document-start
-// ==UserScript==
+// ==UserScript/==
 
 (function() {
     'use strict';
