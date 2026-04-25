@@ -23,7 +23,7 @@
 
 直接运行任意命令或双击程序，如果程序检测不到配置文件，会**自动在当前目录生成一个排版整齐的 `config.json`**。
 
-###点击添加专用油猴解析脚本[m3u8-sniffer](https://raw.githubusercontent.com/Orochi-Adde/m3u8-downloader/main/m3u8-sniffer.user.js)
+### 点击添加专用油猴解析脚本[m3u8-sniffer](https://raw.githubusercontent.com/Orochi-Adde/m3u8-downloader/main/m3u8-sniffer.user.js)
 
 ### 2. 基础下载
 只需提供一个 `-u` 参数即可开始下载，默认保存为 `movie.mp4`：
