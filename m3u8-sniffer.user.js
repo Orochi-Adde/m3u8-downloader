@@ -16,6 +16,7 @@
 // @supportURL   https://github.com/Orochi-Adde/m3u8-downloader/issues
 // @downloadURL  https://raw.githubusercontent.com/Orochi-Adde/m3u8-downloader/main/m3u8-sniffer.user.js
 // @updateURL    https://raw.githubusercontent.com/Orochi-Adde/m3u8-downloader/main/m3u8-sniffer.user.js
+// @run-at       document-start
 // ==/UserScript==
 
 (function() {
@@ -31,10 +32,45 @@
     let isUiMinimized = false;
 
     const COLORS = {
-        main: '#27ae60', ad: '#e74c3c', host: '#aaaaaa', fileNormal: '#85c1e9',
+        main: '#27ae60', ad: '#e74c3c', host: '#aaaaaa', fileNormal: '#85c1e9', 
         fileMaster: '#f39c12', child: '#1abc9c', btnParse: '#8e44ad', warning: '#f1c40f', safe: '#2ecc71'
     };
 
+    // ==========================================
+    // 🌟 核心新增：底层网络 API 劫持 (Monkey Patching)
+    // 解决延时加载、点击播放、广告后加载的核心武器
+    // ==========================================
+    function hijackNetwork() {
+        // 1. 劫持 Fetch API
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const url = args[0] instanceof Request ? args[0].url : args[0];
+                if (typeof url === 'string' && url.includes('.m3u8')) {
+                    // 只要代码发起了 m3u8 请求，瞬间捕获！
+                    processSniffedUrl(url, false); 
+                }
+            } catch (e) { console.error("Fetch Intercept Error", e); }
+            return originalFetch.apply(this, args);
+        };
+
+        // 2. 劫持 XMLHttpRequest (XHR)
+        const originalXhrOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+            try {
+                if (typeof url === 'string' && url.includes('.m3u8')) {
+                    // 兼容老式 Ajax 请求
+                    processSniffedUrl(url, false);
+                }
+            } catch (e) { console.error("XHR Intercept Error", e); }
+            return originalXhrOpen.call(this, method, url, ...rest);
+        };
+    }
+
+    // 必须在 document-start 阶段立刻执行，抢在网页自身 JS 运行之前！
+    hijackNetwork();
+
+    // --- 读取本地持久化配置 ---
     let savedProxyEnable = false;
     let savedProxyUrl = 'socks5://127.0.0.1:10808';
     try {
@@ -42,7 +78,7 @@
             savedProxyEnable = GM_getValue('gemini_proxy_enable', false);
             savedProxyUrl = GM_getValue('gemini_proxy_url', 'socks5://127.0.0.1:10808');
         }
-    } catch (e) { console.warn("[M3U8 嗅探器] 读取本地配置被环境限制，已降级为内存模式。"); }
+    } catch (e) {}
 
     function safeSaveConfig(key, value) {
         try { if (typeof GM_setValue !== 'undefined') GM_setValue(key, value); } catch (e) {}
@@ -62,16 +98,16 @@
 
     function makeRequest(url, strategy) {
         return new Promise((resolve, reject) => {
-            GM_xmlhttpRequest({
-                method: "GET", url: url, headers: strategy.headers, anonymous: strategy.anonymous,
-                onload: resolve, onerror: reject
+            GM_xmlhttpRequest({ 
+                method: "GET", url: url, headers: strategy.headers, anonymous: strategy.anonymous, 
+                onload: resolve, onerror: reject 
             });
         });
     }
 
     function toggleUI(action) {
         if (!uiContainer || !minimizedIcon) return;
-
+        
         if (action === 'show') {
             isUiMinimized = false;
             uiContainer.style.setProperty('display', 'flex', 'important');
@@ -138,7 +174,7 @@
                 if (['ref', 'cookie', 'headers'].includes(usedStrategy.id)) document.getElementById('chk-ref').checked = true;
                 if (['cookie', 'headers'].includes(usedStrategy.id)) document.getElementById('chk-cookie').checked = true;
                 if (usedStrategy.id === 'headers') document.getElementById('chk-ua').checked = true;
-
+                
                 hintDiv.style.color = COLORS.warning;
                 hintDiv.innerHTML = `🛡️ <b>防爬拦截</b>: 已验证必须挂载 <b>[${usedStrategy.name}]</b> 参数`;
             } else {
@@ -169,10 +205,9 @@
         setTimeout(() => { parseBtn.innerText = '🔍 探测解析'; parseBtn.style.background = COLORS.btnParse; parseBtn.disabled = false; }, 3000);
     }
 
-    // --- 获取标题 HTML 结构 (便于复用) ---
     function getTitleHTML(count) {
         return `
-            🔍 M3U8 嗅探列表 (${count})
+            🔍 M3U8 嗅探列表 (${count}) 
             <span style="font-size: 10px; background: #8e44ad; color: #fff; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: normal; user-select: none;">m3u8-downloader专用解析</span>
             <span style="font-size: 10px; color: #7f8c8d; font-weight: normal; margin-left: 6px; user-select: none;">(Alt+M 显隐)</span>
         `;
@@ -180,13 +215,13 @@
 
     function initUI() {
         if (!isTopWindow || uiContainer || !document.documentElement) return;
-
+        
         minimizedIcon = document.createElement('div');
         minimizedIcon.style.cssText = `
-            display: none !important; position: fixed !important; top: 15% !important; right: 20px !important;
-            z-index: 2147483647 !important; width: 44px; height: 44px; border-radius: 50%;
-            background: rgba(39, 174, 96, 0.85); backdrop-filter: blur(5px); color: white;
-            justify-content: center; align-items: center; cursor: pointer; font-size: 20px;
+            display: none !important; position: fixed !important; top: 15% !important; right: 20px !important; 
+            z-index: 2147483647 !important; width: 44px; height: 44px; border-radius: 50%; 
+            background: rgba(39, 174, 96, 0.85); backdrop-filter: blur(5px); color: white; 
+            justify-content: center; align-items: center; cursor: pointer; font-size: 20px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 2px solid #2ecc71; transition: transform 0.2s;
             user-select: none;
         `;
@@ -199,22 +234,22 @@
 
         uiContainer = document.createElement('div');
         uiContainer.style.cssText = `
-            position: fixed !important; top: 10% !important; right: 20px !important; z-index: 2147483647 !important;
-            background: rgba(18, 18, 18, 0.95) !important; color: #d4d4d4 !important; padding: 15px !important;
-            border-radius: 8px !important; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
-            border: 1px solid #333 !important;
-            width: clamp(380px, 45vw, 620px); height: 450px;
-            min-width: 380px !important; min-height: 200px !important;
-            max-width: 95vw !important; max-height: 95vh !important;
-            resize: both !important; overflow: hidden !important;
-            font-family: Consolas, monospace !important; font-size: 12px !important;
+            position: fixed !important; top: 10% !important; right: 20px !important; z-index: 2147483647 !important; 
+            background: rgba(18, 18, 18, 0.95) !important; color: #d4d4d4 !important; padding: 15px !important; 
+            border-radius: 8px !important; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important; 
+            border: 1px solid #333 !important; 
+            width: clamp(380px, 45vw, 620px); height: 450px; 
+            min-width: 380px !important; min-height: 200px !important; 
+            max-width: 95vw !important; max-height: 95vh !important; 
+            resize: both !important; overflow: hidden !important; 
+            font-family: Consolas, monospace !important; font-size: 12px !important; 
             flex-direction: column !important; gap: 10px !important; backdrop-filter: blur(10px);
             display: none !important;
         `;
 
         const header = document.createElement('div');
         header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; cursor: move; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;';
-
+        
         const title = document.createElement('span');
         title.id = 'm3u8-sniffer-title';
         title.innerHTML = getTitleHTML(0);
@@ -227,7 +262,7 @@
         const advancedBtn = document.createElement('span');
         advancedBtn.innerText = '⚙️ 参数构造器';
         advancedBtn.style.cssText = 'cursor: pointer; color: #f1c40f; font-size: 12px; margin-right: 15px; font-weight: bold; border-bottom: 1px dashed #f1c40f; user-select: none;';
-
+        
         const minBtn = document.createElement('span');
         minBtn.innerText = '➖';
         minBtn.title = '最小化为图标';
@@ -252,20 +287,19 @@
 
         const advancedPanel = document.createElement('div');
         advancedPanel.style.cssText = 'display: none; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 6px; border: 1px dashed #7f8c8d; flex-direction: column; gap: 8px; margin-top: -5px; flex-shrink: 0;';
-
-        // --- 增加 GitHub 跳转链接 ---
+        
         advancedPanel.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #555; padding-bottom: 6px; margin-bottom: 2px;">
                 <span style="color: #bdc3c7; font-weight: bold;">【后端 CLI 参数构造器】</span>
                 <a href="https://github.com/Orochi-Adde/m3u8-downloader" target="_blank" style="color: #3498db; font-size: 10px; text-decoration: none; user-select: none;">🚀 [Orochi-Adde/m3u8-downloader]</a>
             </div>
-
+            
             <div style="display:flex; gap: 12px; flex-wrap: wrap; margin-top: 5px;">
                 <label style="cursor:pointer;" title="使用 -H 添加 Referer 头"><input type="checkbox" id="chk-ref"> 携带 Referer (-H)</label>
                 <label style="cursor:pointer;" title="使用 -c 添加 Cookie"><input type="checkbox" id="chk-cookie"> 携带 Cookie (-c)</label>
                 <label style="cursor:pointer;" title="使用 -H 添加全量 Header 和 UA"><input type="checkbox" id="chk-ua"> 携带全量 Headers / UA (-H)</label>
             </div>
-
+            
             <div style="display:flex; align-items:center; gap: 8px; margin-top: 8px; border-top: 1px dashed #555; padding-top: 8px;">
                 <label style="cursor:pointer; color:#f1c40f;" title="勾选后，复制的参数会带上后面的代理地址">
                     <input type="checkbox" id="chk-proxy" ${savedProxyEnable ? 'checked' : ''}> 启用全局代理 (-p)
@@ -280,7 +314,7 @@
         `;
 
         advancedBtn.onclick = () => { advancedPanel.style.display = advancedPanel.style.display === 'none' ? 'flex' : 'none'; };
-
+        
         advancedPanel.addEventListener('change', (e) => {
             if (e.target.id === 'gemini-force-parse') {
                 isForceParseMode = e.target.checked;
@@ -366,11 +400,11 @@
 
         const tdFile = document.createElement('td');
         tdFile.style.cssText = 'padding: 8px 4px; vertical-align: top; word-break: break-all;';
-        tdFile.title = url;
-
+        tdFile.title = url; 
+        
         let filename = 'video.m3u8';
         try { filename = new URL(url).pathname.split('/').pop() || 'video.m3u8'; } catch(e){}
-
+        
         let isProbableMaster = false;
         let fileHtml = '';
         if (!isChild) {
@@ -383,12 +417,11 @@
         } else {
             fileHtml = `<span style="color:${COLORS.child};">${filename}</span>`;
         }
-
+        
         const fileContentDiv = document.createElement('div');
         fileContentDiv.innerHTML = fileHtml;
         tdFile.appendChild(fileContentDiv);
 
-        // --- 核心优化：去程序员化的文案提示 ---
         if (inheritedStrategy && inheritedStrategy.id !== 'bare') {
             const hintDiv = document.createElement('div');
             hintDiv.className = 'gemini-hint';
@@ -399,20 +432,20 @@
 
         const tdAction = document.createElement('td');
         tdAction.style.cssText = 'padding: 6px 4px; text-align: right; white-space: nowrap; vertical-align: top;';
-
+        
         const copyBtn = document.createElement('button');
         copyBtn.innerText = '复制参数';
         copyBtn.style.cssText = `background: ${COLORS.main}; color: white; border: none; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; transition: background 0.2s; display: block; margin-bottom: 4px; width: 100%;`;
-
+        
         copyBtn.onclick = () => {
             const outName = isChild ? `${getAutoFilename()}_${res}` : getAutoFilename();
             let cmdStr = ` -u "${url}" -n 32`;
-
+            
             if (document.getElementById('chk-ref').checked) { cmdStr += ` -H "Referer: ${window.location.href}"`; }
             if (document.getElementById('chk-cookie').checked && document.cookie) { cmdStr += ` -c "${document.cookie}"`; }
             if (document.getElementById('chk-ua').checked) { cmdStr += ` -H "User-Agent: ${navigator.userAgent}"`; }
-
-            if (document.getElementById('chk-proxy').checked) {
+            
+            if (document.getElementById('chk-proxy').checked) { 
                 const proxyUrl = document.getElementById('gemini-proxy-url').value.trim();
                 if (proxyUrl) { cmdStr += ` -p "${proxyUrl}"`; }
             }
@@ -433,16 +466,16 @@
             parseBtn.className = 'gemini-hidden-parse';
             parseBtn.style.cssText = `display: ${isForceParseMode ? 'inline-block' : 'none'}; background: ${COLORS.btnParse}; color: white; border: none; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; width: 100%;`;
         }
-
+        
         parseBtn.onclick = () => smartParseM3u8(url, tr, parseBtn, tdFile);
 
         tdAction.appendChild(copyBtn);
-        tdAction.appendChild(parseBtn);
+        tdAction.appendChild(parseBtn); 
 
         tr.appendChild(tdSource);
         tr.appendChild(tdFile);
         tr.appendChild(tdAction);
-
+        
         if (insertAfter && insertAfter.parentNode) { insertAfter.after(tr); } else { tbodyElement.appendChild(tr); }
     }
 
@@ -450,7 +483,7 @@
         if (m3u8List.has(url)) return;
         if (isTopWindow) {
             m3u8List.add(url);
-
+            
             if (!uiContainer) {
                 initUI();
                 toggleUI('show');
@@ -459,8 +492,7 @@
             }
 
             addRowToTable(url, isAd);
-
-            // 更新标题栏结构
+            
             document.getElementById('m3u8-sniffer-title').innerHTML = getTitleHTML(m3u8List.size);
             if (minimizedIcon) minimizedIcon.title = `已抓取 ${m3u8List.size} 个链接 (点击展开)`;
 
@@ -472,11 +504,11 @@
 
     if (isTopWindow) {
         window.addEventListener('message', (event) => { if (event.data && event.data.type === 'GEMINI_M3U8_SNIFFED') { processSniffedUrl(event.data.url, event.data.isAd); }});
-
-        document.addEventListener('keydown', (e) => {
-            if (e.altKey && e.key.toLowerCase() === 'm') {
+        
+        document.addEventListener('keydown', (e) => { 
+            if (e.altKey && e.key.toLowerCase() === 'm') { 
                 if (!uiContainer) {
-                    initUI();
+                    initUI(); 
                     toggleUI('show');
                 } else {
                     toggleUI();
@@ -513,7 +545,7 @@
             const regex = /(https?:\/\/[a-zA-Z0-9_./-]+\.m3u8[a-zA-Z0-9_./?=A-Z-]*)/ig;
             const matches = htmlStr.match(regex);
             if (matches) { matches.forEach(url => processSniffedUrl(url.replace(/\\/g, ''))); }
-        }, 500);
+        }, 500); 
     }
 
     window.addEventListener('load', () => {
