@@ -1,6 +1,7 @@
 # 🚀 高性能 M3U8 流媒体下载器 (M3U8 Downloader)
 
 基于 Go 语言原生标准库打造的极速、轻量级流媒体视频下载工具。专为突破现代视频网站的反爬机制而生，拥有极高的并发性能和极低的内存占用。
+### 2026-4-26重磅更新，支持专用油猴脚本嗅探加密视频，点击添加专用油猴解析脚本[m3u8-sniffer](https://raw.githubusercontent.com/Orochi-Adde/m3u8-downloader/main/m3u8-sniffer.user.js)
 
 ## ✨ 核心特性
 
@@ -22,8 +23,6 @@
 将下载好的压缩包解压，在当前目录下打开命令行终端（Windows 用户可在文件夹顶部地址栏输入 `cmd` 回车）。
 
 直接运行任意命令或双击程序，如果程序检测不到配置文件，会**自动在当前目录生成一个排版整齐的 `config.json`**。
-
-### 点击添加专用油猴解析脚本[m3u8-sniffer](https://raw.githubusercontent.com/Orochi-Adde/m3u8-downloader/main/m3u8-sniffer.user.js)
 
 ### 2. 基础下载
 只需提供一个 `-u` 参数即可开始下载，默认保存为 `movie.mp4`：
