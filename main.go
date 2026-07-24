@@ -99,12 +99,17 @@ func printConfigBanner() {
 	fmt.Printf("🚀 并发线程  : %d\n", Flags.Threads)
 	fmt.Printf("🔄 错误重试  : %d 次\n", Flags.Retries)
 	fmt.Printf("🛡️ 强行覆盖  : %t\n", Flags.Force)
+	fmt.Printf("🕵️ 隐身模式(-s): %t\n", Flags.Stealth)
 	fmt.Printf("🌐 代理配置  : %s\n", proxyStatus)
+	
 	uaStr := headerMap["User-Agent"]
 	if len(uaStr) > 60 {
 		uaStr = uaStr[:57] + "..."
 	}
 	fmt.Printf("🎭 当前 UA   : %s\n", uaStr)
+	if Flags.Stealth {
+		fmt.Printf("📦 复杂头数量 : %d 项已加载\n", len(headerMap))
+	}
 	fmt.Println("==================================================")
 }
 
