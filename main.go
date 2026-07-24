@@ -102,13 +102,11 @@ func printConfigBanner() {
 	fmt.Printf("🕵️ 隐身模式(-s): %t\n", Flags.Stealth)
 	fmt.Printf("🌐 代理配置  : %s\n", proxyStatus)
 	
-	uaStr := headerMap["User-Agent"]
-	if len(uaStr) > 60 {
-		uaStr = uaStr[:57] + "..."
-	}
-	fmt.Printf("🎭 当前 UA   : %s\n", uaStr)
-	if Flags.Stealth {
-		fmt.Printf("📦 复杂头数量 : %d 项已加载\n", len(headerMap))
+	// 打印完整的请求头，用于 Debug
+	fmt.Println("--------------------------------------------------")
+	fmt.Println("📋 [DEBUG] 当前生效的完整请求头 (Headers):")
+	for k, v := range headerMap {
+		fmt.Printf("   • %s: %s\n", k, v)
 	}
 	fmt.Println("==================================================")
 }
