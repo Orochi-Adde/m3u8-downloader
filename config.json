@@ -2,7 +2,7 @@
   "default_threads": 32,
   "timeout_sec": 15,
   "max_retries": 5,
-  "proxy": "socks5://127.0.0.1:10808",
+  "proxy": "",
   "insecure": false,
   "default_dir": "",
   "user_agents": [
