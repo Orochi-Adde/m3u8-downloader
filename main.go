@@ -143,3 +143,4 @@ func setupCloseHandler() {
 		fmt.Println("\n\n⚠️ 检测到终止信号 (Ctrl+C)，已保存当前断点进度，程序退出。下次启动将自动续传。")
 		os.Exit(0)
 	}()
+}
