@@ -1,11 +1,11 @@
 package main
 
+package main
+
 import (
-	"crypto/tls" // 补上这一行
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -13,6 +13,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	// 【修改点 1】引入底层的 HTTP/2 控制和 TLS 指纹伪造库
+	http "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 )
 
 type TsInfo struct {
@@ -21,39 +26,44 @@ type TsInfo struct {
 }
 
 var (
-	httpClient      *http.Client
+	// 【修改点 2】将原本的 *http.Client 替换为 tls_client.HttpClient
+	httpClient      tls_client.HttpClient 
 	headerMap       = make(map[string]string)
 	downloadedBytes int64 // 用于计算下载速度
 )
 
 func InitNetwork() {
-	tr := &http.Transport{
-		MaxIdleConns:        100,
-		MaxIdleConnsPerHost: 100,
-		IdleConnTimeout:     90 * time.Second,
+	// 【修改点 3】使用 tls_client 配置项替代原本的 http.Transport
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(Config.TimeoutSec),
+		// 核心：强制指定 TLS/HTTP2 指纹为 Chrome 120
+		tls_client.WithClientProfile(profiles.Chrome_120),
+		// 屏蔽默认的内部日志
+		tls_client.WithLogger(tls_client.NewNoopLogger()),
 	}
 
+	// 注入是否跳过证书验证选项
 	if Flags.Insecure {
-		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		options = append(options, tls_client.WithInsecureSkipVerify())
 	}
 
-	// 注入代理 (如果指定了 -proxy 参数，否则读取系统代理)
+	// 注入代理 (如果指定了 -proxy 参数)
 	if Flags.Proxy != "" {
-		proxyURL, err := url.Parse(Flags.Proxy)
-		if err != nil {
-			log.Fatalf("❌ 代理地址格式错误: %v", err)
-		}
-		tr.Proxy = http.ProxyURL(proxyURL)
-	} else {
-		tr.Proxy = http.ProxyFromEnvironment
+		// tls-client 直接接受字符串格式的代理
+		options = append(options, tls_client.WithProxyUrl(Flags.Proxy))
+	} else if sysProxy := os.Getenv("HTTP_PROXY"); sysProxy != "" {
+		// 回退读取系统代理
+		options = append(options, tls_client.WithProxyUrl(sysProxy))
 	}
 
-	httpClient = &http.Client{
-		Transport: tr,
-		Timeout:   time.Duration(Config.TimeoutSec) * time.Second,
+	// 实例化具备真实浏览器指纹的 Client
+	client, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
+	if err != nil {
+		log.Fatalf("❌ 初始化底层网络引擎失败: %v", err)
 	}
+	httpClient = client
 
-	// 构建固定 Header
+	// 构建固定 Header[cite: 4]
 	headerMap["User-Agent"] = GetRandomUA()
 	if Flags.Cookie != "" {
 		headerMap["Cookie"] = Flags.Cookie
@@ -67,14 +77,17 @@ func InitNetwork() {
 }
 
 func FetchContent(reqURL string) ([]byte, error) {
-	req, err := http.NewRequest("GET", reqURL, nil)
+	// 【修改点 4】这里使用的是 fhttp.NewRequest，而不是标准库的 net/http[cite: 4]
+	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, err
 	}
+	
 	for k, v := range headerMap {
 		req.Header.Set(k, v)
 	}
 
+	// 发起带有完整浏览器特征的请求
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -86,6 +99,10 @@ func FetchContent(reqURL string) ([]byte, error) {
 	}
 	return io.ReadAll(resp.Body)
 }
+
+// =====================================================================
+// 下方解析 M3U8、解密、并发下载的代码逻辑完全保持不变，因为它们不涉及底层网络连接
+// =====================================================================
 
 func ParseTsList(baseURL *url.URL, body string) []TsInfo {
 	var tsList []TsInfo
@@ -148,25 +165,19 @@ func StartDownloader(tsList []TsInfo, savePath string, key string) {
 		}()
 	}
 
-	// 启动速度监控面板协程
 	go speedMonitor(tsLen, &completedCount)
-
 	wg.Wait()
 }
 
 func downloadTsWithRetry(ts TsInfo, savePath string, key string, retries int) {
 	filePath := filepath.Join(savePath, ts.Name)
 	
-	// 【新增】断点续传与强制覆盖检测逻辑
 	if info, err := os.Stat(filePath); err == nil {
 		if Flags.Force {
-			// 如果开启了强行覆盖，删掉旧的重新下
 			os.Remove(filePath)
 		} else if info.Size() > 0 {
-			// 文件存在且大小大于0，直接判定为已下载完成，跳过本次下载
 			return
 		} else {
-			// 文件存在但是是0kb空壳，删掉重下
 			os.Remove(filePath)
 		}
 	}
@@ -182,7 +193,6 @@ func downloadTsWithRetry(ts TsInfo, savePath string, key string, retries int) {
 			data, _ = AesDecrypt(data, []byte(key))
 		}
 
-		// 找寻同步字节 0x47 (剥离伪装图文头)
 		for j := 0; j < len(data); j++ {
 			if data[j] == 71 {
 				data = data[j:]
@@ -191,7 +201,7 @@ func downloadTsWithRetry(ts TsInfo, savePath string, key string, retries int) {
 		}
 
 		os.WriteFile(filePath, data, 0666)
-		atomic.AddInt64(&downloadedBytes, int64(len(data))) // 记录下载量用于测速
+		atomic.AddInt64(&downloadedBytes, int64(len(data)))
 		return
 	}
 }
