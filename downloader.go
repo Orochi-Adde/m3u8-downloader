@@ -34,8 +34,8 @@ func InitNetwork() {
 	// 【修改点 3】使用 tls_client 配置项替代原本的 http.Transport
 	options := []tls_client.HttpClientOption{
 		tls_client.WithTimeoutSeconds(Config.TimeoutSec),
-		// 核心：强制指定 TLS/HTTP2 指纹为 Chrome 146
-		tls_client.WithClientProfile(profiles.Chrome_146),
+		// 核心：强制指定 TLS/HTTP2 指纹为 Chrome 150
+		tls_client.WithClientProfile(profiles.Chrome_150),
 	}
 
 	// 注入是否跳过证书验证选项
