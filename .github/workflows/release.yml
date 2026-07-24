@@ -7,7 +7,7 @@ on:
       #- master
       #- main
   # 保留网页手动触发按钮（以防万一你想手动跑）
- workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
   # 第一阶段：在多平台上并行编译和打包
@@ -46,6 +46,22 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.21' # 使用稳定的 Go 1.21 版本
+
+    # ===============================================================
+    # 新增步骤：自动处理包依赖 (go mod tidy)
+    # ===============================================================
+    - name: Resolve and Download Dependencies
+      run: |
+        # 如果仓库根目录没有 go.mod，自动生成一个作为兜底
+        if [ ! -f go.mod ]; then
+          echo "未检测到 go.mod，自动执行初始化..."
+          go mod init m3u8-downloader
+        fi
+        
+        # 自动整理代码依赖、拉取 tls-client 等第三方包，并生成/更新 go.sum
+        echo "正在整理并拉取依赖包..."
+        go mod tidy
+    # ===============================================================
 
     - name: Build and Zip
       env:
