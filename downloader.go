@@ -59,8 +59,9 @@ func InitNetwork() {
 	}
 	httpClient = client
 
-	// 构建固定 Header[cite: 4]
-	headerMap["User-Agent"] = GetRandomUA()
+	// 通过 GetBaseHeaders 获取基础 UA 或完整的复杂特征 Header 组[cite: 7]
+	headerMap = GetBaseHeaders()
+
 	if Flags.Cookie != "" {
 		headerMap["Cookie"] = Flags.Cookie
 	}
