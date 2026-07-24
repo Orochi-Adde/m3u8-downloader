@@ -1,7 +1,8 @@
 // @author:Orochi-Adde
-// @date:2026-04-12
+// @date:2026-07-25
 // @功能: 高性能、低内存占用的 Golang M3U8 下载器
 // @优化: 使用原生 net/http，标准 Worker Pool并发，io.Copy 流式合并零内存泄露，增强反爬伪装
+// @优化：支持浏览器指纹下载功能，添加-s参数即可
 package main
 
 import (
