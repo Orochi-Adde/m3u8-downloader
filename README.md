@@ -1,6 +1,7 @@
 # 🚀 高性能 M3U8 流媒体下载器 (M3U8 Downloader)
 
 基于 Go 语言原生标准库打造的极速、轻量级流媒体视频下载工具。专为突破现代视频网站的反爬机制而生，拥有极高的并发性能和极低的内存占用。
+### 2026-7-25支持浏览器指纹下载功能，添加-s参数即可
 ### 2026-4-26重磅更新，支持专用油猴脚本嗅探加密视频，点击添加专用油猴解析脚本[m3u8-sniffer](https://raw.githubusercontent.com/Orochi-Adde/m3u8-downloader/main/m3u8-sniffer.user.js)
 
 ## ✨ 核心特性
@@ -43,6 +44,19 @@ m3u8-downloader -u "https://example.com/video.m3u8"
   "user_agents": [            // 随机 UA 池，可自行追加
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36..."
   ]
+   "advanced_headers": [    {
+      "Accept": "*/*",
+	  "priority": "u=1, i",
+	  "accept-encoding": "gzip, deflate, br, zstd",
+      "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+      "Sec-Ch-Ua": "\"Not;A=Brand\";v=\"8\", \"Chromium\";v=\"146\", \"Google Chrome\";v=\"146\"",
+      "Sec-Ch-Ua-Mobile": "?0",
+      "Sec-Ch-Ua-Platform": "\"Windows\"",
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "cross-site",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+    }]
 }
 ```
 ## 🎛️ 命令行参数速查表配置
@@ -58,6 +72,7 @@ m3u8-downloader -u "https://example.com/video.m3u8"
 | **`-k`** | `-insecure` | 强制跳过 HTTPS 证书验证（对付野鸡网站报错） | `-k` |
 | **`-f`** | `-force` | **强行覆盖**：若存在同名 mp4，直接删除并重新下载 | `-f` |
 | **`-r`** | `-retries` | 临时指定单碎片最大重试次数 | `-r 10` |
+| **`-s`** | `-retries` | 支持浏览器指纹下载功能 | `` |
 | 无 | `-keep` | 合并完 `.mp4` 后，保留 `.ts` 碎片不删除 | `-keep` |
 
 ## 🎮 进阶使用场景
