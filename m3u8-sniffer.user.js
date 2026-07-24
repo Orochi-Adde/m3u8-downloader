@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         M3U8 资源终极嗅探器
 // @namespace    https://github.com/Orochi-Adde/m3u8-downloader
-// @version      1.0
+// @version      1.0.2
 // @description  m3u8-downloader 专属解析适配，智能突破防爬限制，原生零损耗拉伸
 // @author       Orochi-Adde
 // @match        *://*/*
@@ -151,14 +151,18 @@
             let isMaster = false, lastResolution = '默认画质';
 
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
+                const line = lines.length > i ? lines[i].trim() : '';
                 if (line.startsWith('#EXT-X-STREAM-INF')) {
                     isMaster = true;
                     const resMatch = line.match(/RESOLUTION=(\d+x\d+)/);
                     lastResolution = resMatch ? resMatch[1] : '未知画质';
-                } else if (line.endsWith('.m3u8') && !line.startsWith('#')) {
+                } else if (!line.startsWith('#') && line.length > 0) {
+                    // 🌟 修复核心：只要不是注释且不为空，即为有效的子 m3u8 链接（兼容带 query 参数的链接）
                     isMaster = true;
-                    try { results.push({ url: new URL(line, url).href, res: lastResolution }); lastResolution = '默认画质'; } catch(e) {}
+                    try { 
+                        results.push({ url: new URL(line, url).href, res: lastResolution }); 
+                        lastResolution = '默认画质'; 
+                    } catch(e) {}
                 }
             }
 
