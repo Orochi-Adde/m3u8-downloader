@@ -36,8 +36,6 @@ func InitNetwork() {
 		tls_client.WithTimeoutSeconds(Config.TimeoutSec),
 		// 核心：强制指定 TLS/HTTP2 指纹为 Chrome 120
 		tls_client.WithClientProfile(profiles.Chrome_120),
-		// 屏蔽默认的内部日志
-		tls_client.WithLogger(tls_client.NewNoopLogger()),
 	}
 
 	// 注入是否跳过证书验证选项
