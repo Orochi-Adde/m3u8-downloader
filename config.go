@@ -60,13 +60,13 @@ func LoadConfigAndFlags() {
 		
 		// 构建一个默认的复杂 Header 组（以现代 Chrome 为例）
 		defaultAdvancedHeader := map[string]string{
-			"User-Agent":         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+			"User-Agent":         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
 			"Accept":             "*/*",
 			"Accept-Language":    "zh-CN,zh;q=0.9,en;q=0.8",
 			"Sec-Fetch-Dest":     "empty",
 			"Sec-Fetch-Mode":     "cors",
 			"Sec-Fetch-Site":     "cross-site",
-			"Sec-Ch-Ua":          `"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"`,
+			"Sec-Ch-Ua":          `"Not;A=Brand";v="8", "Chromium";v="146", "Google Chrome";v="146"`,
 			"Sec-Ch-Ua-Mobile":   "?0",
 			"Sec-Ch-Ua-Platform": `"Windows"`,
 		}
@@ -79,7 +79,7 @@ func LoadConfigAndFlags() {
 			Insecure:       false,
 			DefaultDir:     "", 
 			UserAgents: []string{
-				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
 				"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
 				"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
 			},
